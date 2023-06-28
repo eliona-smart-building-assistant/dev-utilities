@@ -1,6 +1,6 @@
 # Utilities for Eliona app structures
 
-This package contains utilities to help with ELiona app development.
+This package contains utilities to help with Eliona app development.
 
 ## Asset from struct
 
@@ -20,4 +20,4 @@ This utility was developed originally when there was a need to pass to Eliona sp
 
 ### Usage
 
-Pass the path to the folder with asset type definitions (typically `app-root/eliona`) as the first parameter. The utility will take as input all files like `asset_type_.*\.json` from the folder.
+Pass the path to the folder with asset type definitions (typically `app-root/eliona`) as the first parameter. The utility will take as input all files like `asset_type_*.json` from the folder.

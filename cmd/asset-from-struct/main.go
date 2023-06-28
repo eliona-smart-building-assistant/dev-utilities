@@ -1,0 +1,120 @@
+package main
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
+	"os"
+	"reflect"
+	"strings"
+)
+
+type attribute struct {
+	Enable      bool              `json:"enable"`
+	Name        string            `json:"name"`
+	Subtype     string            `json:"subtype"`
+	Type        string            `json:"type,omitempty"`
+	Translation map[string]string `json:"translation,omitempty"`
+	Unit        string            `json:"unit,omitempty"`
+}
+
+type assetTypeDef struct {
+	Attributes  []attribute       `json:"attributes"`
+	Custom      bool              `json:"custom"`
+	Icon        string            `json:"icon"`
+	Name        string            `json:"name"`
+	Translation map[string]string `json:"translation"`
+	Urldoc      string            `json:"urldoc"`
+	Vendor      string            `json:"vendor"`
+}
+
+func main() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Println("Enter struct (finish with an empty line):")
+
+	var structStrBuilder strings.Builder
+	for {
+		line, err := reader.ReadString('\n')
+		if err != nil {
+			panic(err)
+		}
+		if line == "\n" {
+			break
+		}
+		structStrBuilder.WriteString(line)
+	}
+
+	structStr := structStrBuilder.String()
+
+	fset := token.NewFileSet()
+	f, err := parser.ParseFile(fset, "", "package main\n"+structStr, 0)
+	if err != nil {
+		panic(err)
+	}
+
+	for _, decl := range f.Decls {
+		genDecl, ok := decl.(*ast.GenDecl)
+		if !ok || genDecl.Tok != token.TYPE {
+			continue
+		}
+
+		for _, spec := range genDecl.Specs {
+			typeSpec, ok := spec.(*ast.TypeSpec)
+			if !ok {
+				continue
+			}
+
+			structType, ok := typeSpec.Type.(*ast.StructType)
+			if !ok {
+				continue
+			}
+
+			assetType := processStruct(structType)
+			jsonAssetType, _ := json.MarshalIndent(assetType, "", "\t")
+			fmt.Println(string(jsonAssetType))
+		}
+	}
+}
+
+func processStruct(structType *ast.StructType) assetTypeDef {
+	assetType := assetTypeDef{
+		Custom: true,
+		Icon:   "...",
+		Name:   "...",
+		Translation: map[string]string{
+			"de": "...",
+			"en": "...",
+		},
+		Urldoc: "...",
+		Vendor: "...",
+	}
+
+	for _, field := range structType.Fields.List {
+		if field.Names == nil { // Skip anonymous fields.
+			continue
+		}
+
+		tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1]) // Remove the surrounding quotes.
+		elionaTag := tag.Get("eliona")
+		elionaValues := strings.Split(elionaTag, ",")
+
+		attr := attribute{
+			Enable:  true,
+			Name:    elionaValues[0],
+			Subtype: tag.Get("subtype"),
+			Translation: map[string]string{
+				"de": "...",
+				"en": "...",
+			},
+			Type: "...",
+			Unit: "...",
+		}
+
+		assetType.Attributes = append(assetType.Attributes, attr)
+	}
+
+	return assetType
+}
