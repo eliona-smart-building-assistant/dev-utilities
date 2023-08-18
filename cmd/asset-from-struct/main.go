@@ -93,18 +93,24 @@ func processStruct(structType *ast.StructType) assetTypeDef {
 	}
 
 	for _, field := range structType.Fields.List {
-		if field.Names == nil { // Skip anonymous fields.
+		if field.Names == nil || field.Tag == nil {
 			continue
 		}
 
 		tag := reflect.StructTag(field.Tag.Value[1 : len(field.Tag.Value)-1]) // Remove the surrounding quotes.
+		subtype := tag.Get("subtype")
+
+		if subtype == "" {
+			continue
+		}
+
 		elionaTag := tag.Get("eliona")
 		elionaValues := strings.Split(elionaTag, ",")
 
 		attr := attribute{
 			Enable:  true,
-			Name:    elionaValues[0],
-			Subtype: tag.Get("subtype"),
+			Name:    elionaValues[0], // Use the name part of the tag value (before the ",").
+			Subtype: subtype,
 			Translation: map[string]string{
 				"de": "...",
 				"en": "...",
