@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"os"
 	"reflect"
 	"strings"
@@ -33,20 +34,32 @@ type assetTypeDef struct {
 
 func main() {
 	reader := bufio.NewReader(os.Stdin)
-	fmt.Println("Enter struct (finish with an empty line):")
+	fmt.Println("Enter struct (finish with double newline or EOF):")
 
 	var structStrBuilder strings.Builder
+	previousLineWasEmpty := false
 	for {
 		line, err := reader.ReadString('\n')
 		if err != nil {
+			if err == io.EOF {
+				// EOF might be a valid case to break out if it's the end of the input.
+				break
+			}
 			panic(err)
 		}
+
+		// Check for a double newline, which indicates the end of the input
 		if line == "\n" {
-			break
+			if previousLineWasEmpty {
+				break
+			}
+			previousLineWasEmpty = true
+		} else {
+			previousLineWasEmpty = false
 		}
+
 		structStrBuilder.WriteString(line)
 	}
-
 	structStr := structStrBuilder.String()
 
 	fset := token.NewFileSet()
