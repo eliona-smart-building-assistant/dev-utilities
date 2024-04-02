@@ -19,6 +19,7 @@ type attribute struct {
 	Subtype     string            `json:"subtype"`
 	Type        string            `json:"type,omitempty"`
 	Translation map[string]string `json:"translation,omitempty"`
+	IsDigital   bool              `json:"isDigital,omitempty"`
 	Unit        string            `json:"unit,omitempty"`
 }
 
@@ -120,6 +121,9 @@ func processStruct(structType *ast.StructType) assetTypeDef {
 		elionaTag := tag.Get("eliona")
 		elionaValues := strings.Split(elionaTag, ",")
 
+		fieldType, ok := field.Type.(*ast.Ident)
+		isBoolean := ok && fieldType.Name == "bool"
+
 		attr := attribute{
 			Enable:  true,
 			Name:    elionaValues[0], // Use the name part of the tag value (before the ",").
@@ -128,8 +132,9 @@ func processStruct(structType *ast.StructType) assetTypeDef {
 				"de": "...",
 				"en": "...",
 			},
-			Type: "...",
-			Unit: "...",
+			IsDigital: isBoolean,
+			Type:      "...",
+			Unit:      "...",
 		}
 
 		assetType.Attributes = append(assetType.Attributes, attr)
