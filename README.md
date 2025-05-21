@@ -2,6 +2,10 @@
 
 This package contains utilities to help with Eliona app development.
 
+## Database code generator
+
+Utility `db-generator` runs go-jet generator with customized generator for ELiona projects.
+
 ## Asset from struct
 
 Utility `asset-from-struct` generates asset type JSON from provided structure.
