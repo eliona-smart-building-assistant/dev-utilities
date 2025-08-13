@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"github.com/jackc/pgtype"
 	"log"
 
 	"github.com/go-jet/jet/v2/generator/metadata"
@@ -27,20 +28,28 @@ func main() {
 		*schema,
 		*path,
 		template.Default(postgres2.Dialect).
-			UseSchema(func(schema metadata.Schema) template.Schema {
-				return template.DefaultSchema(schema).
+			UseSchema(func(s metadata.Schema) template.Schema {
+				return template.DefaultSchema(s).
 					UseModel(template.DefaultModel().
-						UseTable(func(table metadata.Table) template.TableModel {
-							return template.DefaultTableModel(table).
-								UseField(func(column metadata.Column) template.TableModelField {
-									defaultTableModelField := template.DefaultTableModelField(column)
+						UseTable(func(t metadata.Table) template.TableModel {
+							return template.DefaultTableModel(t).
+								UseField(func(c metadata.Column) template.TableModelField {
+									f := template.DefaultTableModelField(c)
 
-									// Check if the column is of type ARRAY and its element type is text or varchar
-									if column.DataType.Kind == metadata.ArrayType && column.DataType.Name == "text[]" {
-										defaultTableModelField.Type = template.NewType(pq.StringArray{})
+									// text[] -> pq.StringArray
+									if c.DataType.Kind == metadata.ArrayType && c.DataType.Name == "text[]" {
+										f.Type = template.NewType(pq.StringArray{})
+										return f
 									}
 
-									return defaultTableModelField
+									// json / jsonb -> pgtype.JSONB
+									if c.DataType.Kind == metadata.BaseType &&
+										(c.DataType.Name == "json" || c.DataType.Name == "jsonb") {
+										f.Type = template.NewType(pgtype.JSONB{})
+										return f
+									}
+
+									return f
 								})
 						}),
 					)
